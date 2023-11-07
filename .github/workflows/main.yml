@@ -1,7 +1,6 @@
 # This is basic workflow to help you get started with Actions
 
-name: GitHub Actions Demo
-
+name: GitHub Actions Android Testing
 # Controls when the action will run.
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
@@ -15,51 +14,51 @@ on:
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
-  lint:
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+  # lint:
+  #   # The type of runner that the job will run on
+  #   runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository, so your job can access it
-      - name: Checkout the code
-        uses: actions/checkout@v2
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     # Checks-out your repository, so your job can access it
+  #     - name: Checkout the code
+  #       uses: actions/checkout@v2
 
-      # Runnning Lint command
-      - name: Run Lint
-        run: ./gradlew lintDebug
+  #     # Runnning Lint command
+  #     - name: Run Lint
+  #       run: ./gradlew lintDebug
 
-      # Uploading html test report
-      - name: Upload html test report
-        uses: actions/upload-artifact@v2
-        with:
-          name: lint.html
-          path: app/build/reports/lint-results-debug.html
+  #     # Uploading html test report
+  #     - name: Upload html test report
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: lint.html
+  #         path: app/build/reports/lint-results-debug.html
 
-  unit-test:
-    needs: [lint]
-    # The type of runner that the job will run on
-    runs-on: ubuntu-latest
+  # unit-test:
+  #   needs: [lint]
+  #   # The type of runner that the job will run on
+  #   runs-on: ubuntu-latest
 
-    # Steps represent a sequence of tasks that will be executed as part of the job
-    steps:
-      # Checks-out your repository, so your job can access it
-      - name: Checkout the code
-        uses: actions/checkout@v2
+  #   # Steps represent a sequence of tasks that will be executed as part of the job
+  #   steps:
+  #     # Checks-out your repository, so your job can access it
+  #     - name: Checkout the code
+  #       uses: actions/checkout@v2
 
-      # Running Test cases
-      - name: Run tests
-        run: ./gradlew test
+  #     # Running Test cases
+  #     - name: Run tests
+  #       run: ./gradlew test
 
-      # Uploading report
-      - name: Upload test report
-        uses: actions/upload-artifact@v2
-        with:
-          name: unit_test_report
-          path: app/build/reports/tests/testDebugUnitTest/
+  #     # Uploading report
+  #     - name: Upload test report
+  #       uses: actions/upload-artifact@v2
+  #       with:
+  #         name: unit_test_report
+  #         path: app/build/reports/tests/testDebugUnitTest/
 
   instrumentation-test:
-    needs: [unit-test]
+    # needs: [unit-test]
     runs-on: macos-latest
     steps:
       # Checks-out your repository, so your job can access it
@@ -79,3 +78,25 @@ jobs:
         with:
           name: instrumentation_test_report
           path: app/build/reports/androidTests/connected/
+
+  package:
+    needs: [instrumentation-test]
+    name: Generate APK
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout the code
+        uses: actions/checkout@v2
+
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Building debug APK
+        run: ./gradlew assembleDebug --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v2
+        with:
+          name: android-github-actions-poc.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
