@@ -45,20 +45,29 @@ public class ExpenseDatabaseHelper extends SQLiteOpenHelper {
     SQLiteDatabase database = this.getWritableDatabase();
     Cursor cursor = database.rawQuery(ExpenseTypeTable.SELECT_ALL, null);
 
-    if(isCursorPopulated(cursor)){
+    // Check if the cursor is populated and not null
+    if (isCursorPopulated(cursor)) {
       do {
-        String type = cursor.getString(cursor.getColumnIndex(ExpenseTypeTable.TYPE));
-        expenseTypes.add(type);
-      } while(cursor.moveToNext());
+        int typeColumnIndex = cursor.getColumnIndex(ExpenseTypeTable.TYPE);
+        if (typeColumnIndex != -1) {
+          String type = cursor.getString(typeColumnIndex);
+
+          // Validate the value (e.g., must be >= 0)
+          if (type != null && !type.isEmpty()) {
+            expenseTypes.add(type);
+          }
+        }
+      } while (cursor.moveToNext());
     }
 
+    cursor.close(); // Close the cursor when done
     return expenseTypes;
   }
 
   public void deleteAll() {
     SQLiteDatabase database = this.getWritableDatabase();
-    database.delete(ExpenseTypeTable.TABLE_NAME, "", new String[]{});
-    database.delete(ExpenseTable.TABLE_NAME, "", new String[]{});
+    database.delete(ExpenseTypeTable.TABLE_NAME, "", new String[] {});
+    database.delete(ExpenseTable.TABLE_NAME, "", new String[] {});
     database.close();
   }
 
@@ -119,18 +128,31 @@ public class ExpenseDatabaseHelper extends SQLiteOpenHelper {
 
   private List<Expense> buildExpenses(Cursor cursor) {
     List<Expense> expenses = new ArrayList<>();
-    if(isCursorPopulated(cursor)){
-      do {
-        String type = cursor.getString(cursor.getColumnIndex(ExpenseTable.TYPE));
-        String amount = cursor.getString(cursor.getColumnIndex(ExpenseTable.AMOUNT));
-        String date = cursor.getString(cursor.getColumnIndex(ExpenseTable.DATE));
-        String id = cursor.getString(cursor.getColumnIndex(ExpenseTable._ID));
 
-        Expense expense = id == null ? new Expense(parseLong(amount), type, date) : new Expense(parseInt(id), parseLong(amount), type, date);
-        expenses.add(expense);
-      } while(cursor.moveToNext());
+    // Check if the cursor is populated and not null
+    if (isCursorPopulated(cursor)) {
+      do {
+        int typeColumnIndex = cursor.getColumnIndex(ExpenseTable.TYPE);
+        int amountColumnIndex = cursor.getColumnIndex(ExpenseTable.AMOUNT);
+        int dateColumnIndex = cursor.getColumnIndex(ExpenseTable.DATE);
+        int idColumnIndex = cursor.getColumnIndex(ExpenseTable._ID);
+
+        // Validate the values (e.g., must be >= 0)
+        String type = (typeColumnIndex != -1) ? cursor.getString(typeColumnIndex) : null;
+        String amount = (amountColumnIndex != -1) ? cursor.getString(amountColumnIndex) : null;
+        String date = (dateColumnIndex != -1) ? cursor.getString(dateColumnIndex) : null;
+        String id = (idColumnIndex != -1) ? cursor.getString(idColumnIndex) : null;
+
+        if (amount != null && !amount.isEmpty() && type != null && !type.isEmpty()) {
+          Expense expense = (id == null)
+              ? new Expense(parseLong(amount), type, date)
+              : new Expense(parseInt(id), parseLong(amount), type, date);
+          expenses.add(expense);
+        }
+      } while (cursor.moveToNext());
     }
 
+    cursor.close(); // Close the cursor when done
     return expenses;
   }
 
